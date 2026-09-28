@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+:root { color-scheme: light; }
+body { background: #f4f7f5; color: #15382e; font-family: Arial, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif; }
+button, a, input, select { -webkit-tap-highlight-color: transparent; }
+:is(button, a, input, textarea, summary):focus-visible { outline: 3px solid #0f766e; outline-offset: 3px; }
