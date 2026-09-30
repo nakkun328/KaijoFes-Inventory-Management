@@ -26,7 +26,7 @@
    npx supabase db push --include-seed
    ```
 
-   `<project-ref>` は Dashboard の URL `https://supabase.com/dashboard/project/<project-ref>` の末尾です。新規プロジェクトでは `--dry-run` で `20260928000100_initial.sql` から `20260928000500_photo_size_limit.sql` までの5件が適用対象であることを確認してください。`--include-seed` は検証用データ（佐藤・田中、2件の備品など）を投入するため、**本番プロジェクトでは実行しません**。再実行で seed が重複するため、新規プロジェクトで一度だけ使います。
+   `<project-ref>` は Dashboard の URL `https://supabase.com/dashboard/project/<project-ref>` の末尾です。新規プロジェクトでは `--dry-run` で `20260928000100_initial.sql` から `20260930000100_service_role_grants.sql` までの6件が適用対象であることを確認してください。`--include-seed` は検証用データ（佐藤・田中、2件の備品など）を投入するため、**本番プロジェクトでは実行しません**。再実行で seed が重複するため、新規プロジェクトで一度だけ使います。
 
    Phase 1〜3 の migration と seed をすでに適用したプロジェクトでは、**seed を再投入せず**次だけ実行します。
 
@@ -35,11 +35,13 @@
    npx supabase db push
    ```
 
-   この場合の適用対象は `20260928000200_admin.sql` から `20260928000500_photo_size_limit.sql` までの4件です。Phase 4 まで適用済みなら `20260928000400_photos.sql` と `20260928000500_photo_size_limit.sql` だけです。
+   この場合の適用対象は `20260928000200_admin.sql` から `20260930000100_service_role_grants.sql` までの5件です。Phase 4 まで適用済みなら写真関連の2件と `20260930000100_service_role_grants.sql` の3件です。以前の5件が適用済みなら追加の権限migrationだけが対象です。
 
 6. `npm run dev` を実行し、`http://localhost:3000` を開きます。別のターミナルで `npm run test:live`、続いて `npm run test:search-live` を実行します。前者は実データに3件の移動履歴を追加し、`DJI RS 3` の最終位置を物理部室にします。**新規 seed の初期状態で一度だけ**実行してください。後者は移動後の実データで、一覧の検索処理を確認します。
 
 SQL Editor で migration と seed を手動適用する方法もありますが、CLI の migration 履歴が記録されません。今後 `db push` を使うため、このプロジェクトでは CLI 手順に統一します。[migration 管理の注意点](https://supabase.com/docs/guides/deployment/database-migrations)
+
+新しいSupabaseのデフォルト権限に依存しないよう、`20260930000100_service_role_grants.sql` がサーバー用の `service_role` にテーブルと採番シーケンスの権限を明示します。新規プロジェクトでは **Automatically expose new tables** を無効にしても使用できます。匿名ユーザーと一般認証ユーザーの権限は追加しません。
 
 ### RLS と RPC の作成確認
 

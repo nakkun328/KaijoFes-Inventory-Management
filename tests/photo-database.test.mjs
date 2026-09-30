@@ -9,6 +9,7 @@ const migrations = await Promise.all([
   '20260928000300_admin_constraints.sql',
   '20260928000400_photos.sql',
   '20260928000500_photo_size_limit.sql',
+  '20260930000100_service_role_grants.sql',
 ].map((name) => readFile(new URL(`../supabase/migrations/${name}`, import.meta.url), 'utf8')))
 const seed = await readFile(new URL('../supabase/seed.sql', import.meta.url), 'utf8')
 const adminId = 'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa'
@@ -33,7 +34,7 @@ test('photo metadata RPCs and Storage policies require an allowlisted admin', as
     );
     create table storage.objects (bucket_id text not null, name text not null);
     alter table storage.objects enable row level security;
-    create role service_role;
+    create role service_role bypassrls;
     create role anon;
     create role authenticated;
   `)
@@ -54,6 +55,24 @@ test('photo metadata RPCs and Storage policies require an allowlisted admin', as
   const equipmentId = (await pg.query("select id from public.equipments where name = 'DJI RS 3'")).rows[0].id
   const path1 = `${equipmentId}/${image1}.jpg`
   const path2 = `${equipmentId}/${image2}.webp`
+
+  await t.test('server can read and move equipment without Supabase default grants', async () => {
+    const memberId = (await pg.query("select id from public.members where name = '佐藤'")).rows[0].id
+    await pg.exec('set role service_role')
+    try {
+      for (const table of ['categories', 'locations', 'members', 'equipments', 'equipment_images', 'equipment_components', 'movement_history', 'admin_users']) {
+        await pg.query(`select * from public.${table}`)
+      }
+      const equipment = (await pg.query('select updated_at from public.equipments where id = $1', [equipmentId])).rows[0]
+      await pg.query('select public.move_equipment($1,$2,$3,$4,$5)', [equipmentId, 'member', memberId, memberId, equipment.updated_at])
+      const moved = (await pg.query('select status, current_member_id from public.equipments where id = $1', [equipmentId])).rows[0]
+      assert.deepEqual(moved, { status: 'borrowed', current_member_id: memberId })
+      assert.equal((await pg.query('select count(*)::integer as n from public.movement_history where equipment_id = $1', [equipmentId])).rows[0].n, 1)
+      await pg.query("insert into public.equipments (name, category_id, current_location_id, status) select 'サーバー採番確認', category_id, default_location_id, 'stored' from public.equipments where id = $1", [equipmentId])
+    } finally {
+      await pg.exec('reset role')
+    }
+  })
 
   async function asRole(role, uid, fn) {
     await pg.exec(`set request.jwt.claim.sub = '${uid}'; set role ${role};`)
