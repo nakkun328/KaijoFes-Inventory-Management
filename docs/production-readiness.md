@@ -8,7 +8,11 @@
 - 新規Supabaseの自動GRANT無効設定に対応するため、`20260930000100_service_role_grants.sql` を追加しました。従来の5件と合わせて新規環境への適用対象は6件です。既存の開発環境には追加1件だけを適用し、seedは再投入しません。
 - `service_role` のテーブルアクセスと採番・移動を、自動GRANTのないPostgreSQLで検証しています。匿名ユーザーと管理者以外のRLS拒否も維持します。
 - ローカルではTurbopackの内部ポート使用が実行環境で禁止されました。`npm run build -- --webpack` と `npm run check:client-secret` は成功しました。Vercelでは標準ビルドを実行し、結果を確認します。
-- 本番Supabase作成、Vercel接続、本番管理者登録、デプロイと公開URLの確認は、実際の各サービスで完了を確認してから記録します。
+- 本番Supabase `kaijofes-inventory-prod`（東京）を作成し、6件のmigrationをdry-run後に適用しました。seed未投入、全7業務テーブル0件、RLS・RPC・管理者・Storage・サーバー権限を確認済みです。開発環境にも追加1件だけを適用しました。
+- 本番管理者Authユーザー1名を確認し、`public.admin_users` に登録済みです。秘密情報はGit・チャットへ掲載していません。
+- 開発用Supabaseで管理者・写真・バックアップの実環境テストがすべて成功しました。一般画面の部員選択・検索・詳細・移動先選択も確認済みです。
+- 本番DBの移動・受け渡し・保管復帰・競合拒否は、一時データをロールバックするトランザクションで確認しました。検証後も備品・履歴は0件で、採番シーケンスは変更していません。
+- VercelにはHobbyプランでGitHubリポジトリを接続し、Production=`main`、Root=`./`、Install=`npm ci`、Build=`npm run build` を設定しました。Productionの3変数は本番Supabase、Previewの3変数は開発Supabaseに分離し、すべてSensitiveとして入力しています。デプロイと公開URLの確認は、完了後に記録します。
 
 ## 2026-09-28 の初回確認結果
 
