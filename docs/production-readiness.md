@@ -25,13 +25,13 @@
 
 1. `npm ci`、`npm test`、`npm run typecheck`、`npm run lint`、`npm run build`、`npm audit`、`npm run check:client-secret` を実行します。
 2. `git status --short` で追加対象を確認します。`.env.local`、`.vercel/`、写真やバックアップZIPを追加しないでください。`git check-ignore -v .env.local` と `git ls-files .env.local` で再確認します。
-3. この作業ブランチの実装一式、6件のmigration、README、検証スクリプトをコミットし、GitHubの別ブランチへプッシュしてレビューします。`main` へのマージはPreview検証後に行います。GitHub CLIを使うなら、手元で `gh auth login` を実行してください。パスワードやトークンを共有する必要はありません。
+3. この作業ブランチの実装一式、7件のmigration、README、検証スクリプトをコミットし、GitHubの別ブランチへプッシュしてレビューします。`main` へのマージはPreview検証後に行います。GitHub CLIを使うなら、手元で `gh auth login` を実行してください。パスワードやトークンを共有する必要はありません。
 
 ## 2. 本番Supabaseプロジェクト
 
 1. [Supabase Dashboard](https://supabase.com/dashboard)で所属Organizationを確認し、**New project**から本番専用プロジェクトを作成します。名前は開発用と区別できるものにし、リージョン、DBパスワード、料金プランを確認します。DBパスワードは手元で保管します。
 2. プロジェクト上部の**Connect**でProject URLを、**Settings → API Keys**で `sb_publishable_...` と `sb_secret_...` を確認します。[Supabase APIキー](https://supabase.com/docs/guides/getting-started/api-keys)
-3. この時点のCLIリンクは開発用です。対象のproject refをDashboard URLで確認し、専用の作業ディレクトリまたはworktreeで `npx supabase link --project-ref <本番ref>` を実行します。続けて `npx supabase db push --dry-run` の対象が6件のmigrationだけであることを確認し、`npx supabase db push` を実行します。**`--include-seed` と `db reset --linked` は本番で実行しません。** [CLIのmigration手順](https://supabase.com/docs/guides/local-development/cli-workflows)
+3. この時点のCLIリンクは開発用です。対象のproject refをDashboard URLで確認し、専用の作業ディレクトリまたはworktreeで `npx supabase link --project-ref <本番ref>` を実行します。続けて `npx supabase db push --dry-run` の対象が7件のmigrationだけであることを確認し、`npx supabase db push` を実行します。**`--include-seed` と `db reset --linked` は本番で実行しません。** [CLIのmigration手順](https://supabase.com/docs/guides/local-development/cli-workflows)
 4. `supabase/check_security.sql`、`supabase/check_admin.sql`、`supabase/check_photos.sql` を本番のSQL Editorで読み取り実行し、RLS、移動RPC、管理者ポリシー、非公開Storageバケットを確認します。
 5. **Authentication → Users → Add user**で本番用管理者を作成し、そのAuth UUIDを本番SQL Editorの `insert into public.admin_users (user_id) values ('<UUID>');` に使用します。開発用管理者の認証情報は流用しません。
 
@@ -65,7 +65,7 @@ VercelのPreviewには開発・検証用Supabase、Productionには本番専用S
 ## 6. 別の空プロジェクトで復元演習
 
 1. 開発・Previewから作った有効なZIPを用意し、`unzip -t <ZIP>`で検査して展開します。
-2. 本番でも開発でもない**新しい空のSupabaseプロジェクト**を作成します。上記と同じ6件のmigrationを`db push`で適用し、seedは投入しません。
+2. 本番でも開発でもない**新しい空のSupabaseプロジェクト**を作成します。上記と同じ7件のmigrationを`db push`で適用し、seedは投入しません。
 3. 復元先に管理者Authユーザーと `admin_users` 行を作成します。`cp .env.example .env.restore.local` で別ファイルを作り、復元先のURL・Secret Key・publishable keyを手元で設定します。このファイルは `.gitignore` の対象です。値をチャットやGitへ載せません。
 4. まず `node --env-file=.env.restore.local scripts/restore-backup.mjs <展開ディレクトリ>` で形式・件数・写真の検査だけ実行します。投入時は `node --env-file=.env.restore.local scripts/restore-backup.mjs <展開ディレクトリ> --apply --expected-project-ref <復元先ref> --deleted-by-id <復元先管理者Auth UUID>` を実行します。スクリプトは対象refと空テーブルを確認します。
 5. 復元先SQL Editorで`supabase/reset_management_sequence.sql`を実行します。次に `npm run test:restore-live -- <展開ディレクトリ> --expected-project-ref <復元先ref> --deleted-by-id <復元先管理者Auth UUID>` で全7テーブルの行と写真バイト列を元のZIPと照合し、管理画面も確認します。失敗時は空の演習用プロジェクトを作り直して原因を修正します。実際の本番データに復元スクリプトを向けません。
@@ -73,3 +73,16 @@ VercelのPreviewには開発・検証用Supabase、Productionには本番専用S
 ## 公開判断
 
 GitHubにレビュー済みコードがあり、本番SupabaseのRLS・管理者・環境変数が確認済みで、Previewと別プロジェクトへの復元演習が成功し、Productionで上記の動作確認が済むまで一般公開しません。一般部員はログイン不要なので、アプリURLを知る人による部員のなりすましは運用上のリスクとして公開範囲を決めます。
+
+## 2026-10-02 一括移動の更新
+
+一般一覧と管理者一覧に複数選択と一括移動を追加しました。追加migrationは `20261002000100_bulk_movement.sql` の1件です。既存環境へのdry-runで対象がこの1件、seedが対象外であることを確認してから適用し、アプリを更新します。既存テーブル・データの削除は行いません。
+
+確認項目は、複数件の位置・状態・履歴の同時更新、変更済み/削除済み備品を含む場合の全件ロールバック、同じ移動先のスキップ、100件上限、匿名・一般AuthユーザーによるRPC直接実行拒否、管理者APIの未ログイン拒否です。画面ではスマホ/PCでチェック、全選択、検索・ページをまたぐ選択、確認後の保存を確認します。
+
+2026-10-03 の確認結果：
+
+- 開発・本番の両方で追加1件だけをdry-run後に適用しました。seed未投入、既存データ削除なし。
+- 型検査、lint、26件のテスト、production build（ローカルはwebpack）、61個のクライアント資産へのSecret Key混入検査が成功しました。
+- ローカル専用サンプルDBで管理者ログイン、2ページ分の26件の一括保存、一般画面の2件保存、同一移動先のスキップ、検索をまたぐ選択保持を確認しました。実Authユーザーや本番備品は使用していません。
+- 本番DBでも一時データの一括保存・履歴・スキップ・競合時の全件取消を確認し、全てロールバックしました。採番シーケンスと既存データは変更していません。

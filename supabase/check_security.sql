@@ -20,6 +20,14 @@ select
       'public.move_equipment(uuid,text,uuid,uuid,timestamptz,text)', 'EXECUTE')
   ) as rpc,
   jsonb_build_object(
+    'anon_exec', has_function_privilege('anon',
+      'public.move_equipments(jsonb,text,uuid,uuid,text)', 'EXECUTE'),
+    'authenticated_exec', has_function_privilege('authenticated',
+      'public.move_equipments(jsonb,text,uuid,uuid,text)', 'EXECUTE'),
+    'service_exec', has_function_privilege('service_role',
+      'public.move_equipments(jsonb,text,uuid,uuid,text)', 'EXECUTE')
+  ) as bulk_rpc,
+  jsonb_build_object(
     'admin_users_select', has_table_privilege('service_role', 'public.admin_users', 'SELECT'),
     'sequence_usage', has_sequence_privilege('service_role', 'public.equipment_management_number_seq', 'USAGE'),
     'sequence_select', has_sequence_privilege('service_role', 'public.equipment_management_number_seq', 'SELECT')
