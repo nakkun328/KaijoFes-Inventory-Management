@@ -3,7 +3,8 @@ import type { Equipment, Named } from './types'
 export type EquipmentView = 'all' | 'category' | 'location' | 'member'
 
 export function groupEquipments(items: Equipment[], view: EquipmentView, categories: Named[]) {
-  if (view === 'all') return [['すべて', items]] as [string, Equipment[]][]
+  if (view === 'all') return [['すべて', [...items].sort((a, b) =>
+    (Date.parse(b.updated_at) || 0) - (Date.parse(a.updated_at) || 0))]] as [string, Equipment[]][]
   if (view === 'category') {
     // Catalog categories arrive in the administrator's sort_order, then name order.
     // Use IDs so grouping remains correct even when names are changed.
