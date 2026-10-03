@@ -1,6 +1,7 @@
 export type AdminCategory = { id: string; name: string; sort_order: number }
 export type AdminLocation = { id: string; name: string; description: string | null; active: boolean }
 export type AdminMember = { id: string; name: string; active: boolean }
+export type ReferenceLists = { categories: AdminCategory[]; locations: AdminLocation[]; members: AdminMember[] }
 export type AdminEquipment = {
   id: string; management_number: string; name: string; description: string | null;
   category_id: string; default_location_id: string | null; current_member_id: string | null;

@@ -88,7 +88,7 @@ export function PhotoManager({ equipmentId, deleted = false }: { equipmentId: st
       : <ol className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {photos.map((photo, index) => <li key={photo.id} className="rounded-xl border border-slate-200 p-3">
           <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-slate-100">
-            <Image src={photo.url} alt={`備品写真 ${index + 1}`} fill unoptimized sizes="(max-width: 640px) 100vw, 33vw" className="object-contain" />
+            <Image src={`${photo.url}?width=640`} alt={`備品写真 ${index + 1}`} fill unoptimized sizes="(max-width: 640px) 100vw, 33vw" className="object-contain" />
           </div>
           <p className="mt-2 text-sm font-semibold">{photo.is_primary ? '代表画像' : `写真 ${index + 1}`}</p>
           <div className="mt-2 flex flex-wrap gap-2">

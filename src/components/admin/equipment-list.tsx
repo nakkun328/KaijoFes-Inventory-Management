@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 import { BulkMoveControls, useBulkSelection } from '@/components/bulk-move'
 import { AdminAlert, AdminHeading, inputClass, primaryButton, secondaryButton } from './shell'
-import { adminRequest, displayDate, errorMessage, statusNames, type AdminCategory, type AdminEquipment, type AdminMember, type AdminLocation, type PageResult } from './api'
+import { adminRequest, displayDate, errorMessage, statusNames, type AdminCategory, type AdminEquipment, type AdminMember, type AdminLocation, type PageResult, type ReferenceLists } from './api'
 export function EquipmentList({ deleted = false }: { deleted?: boolean }) {
   const [items, setItems] = useState<AdminEquipment[]>([])
   const [categories, setCategories] = useState<AdminCategory[]>([])
@@ -32,14 +32,14 @@ export function EquipmentList({ deleted = false }: { deleted?: boolean }) {
     } catch (cause) { setError(errorMessage(cause)) } finally { setLoading(false) }
   }, [page, query, categoryId, status, deleted])
   useEffect(() => { void Promise.resolve().then(load) }, [load])
-  useEffect(() => { adminRequest<{ items: AdminCategory[] }>('/api/admin/categories').then(({ items }) => setCategories(items)).catch(() => {}) }, [])
   useEffect(() => {
-    Promise.all([
-      adminRequest<{ items: AdminMember[] }>('/api/admin/members'),
-      adminRequest<{ items: AdminLocation[] }>('/api/admin/locations'),
-    ]).then(([members, locations]) => {
-      setMembers(members.items.filter((item) => item.active)); setLocations(locations.items.filter((item) => item.active))
-    }).catch(() => setRefsError('一括移動の部員・保管場所を読み込めませんでした。画面を再読み込みしてください。'))
+    let active = true
+    adminRequest<ReferenceLists>('/api/admin/references').then(({ categories, members, locations }) => {
+      if (!active) return
+      setCategories(categories)
+      setMembers(members.filter((item) => item.active)); setLocations(locations.filter((item) => item.active))
+    }).catch(() => { if (active) setRefsError('カテゴリ・部員・保管場所を読み込めませんでした。画面を再読み込みしてください。') })
+    return () => { active = false }
   }, [])
   async function changeDeleted(item: AdminEquipment) {
     const action = deleted ? '復元' : '削除'
