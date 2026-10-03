@@ -9,9 +9,9 @@ import { useCatalog } from '@/components/use-catalog'
 import { BulkMoveControls, useBulkSelection } from '@/components/bulk-move'
 import { dateLabel, holderLabel, statusLabel } from '@/lib/display'
 import { searchEquipments } from '@/lib/search'
-import type { Equipment } from '@/lib/types'
+import { groupEquipments, type EquipmentView } from '@/lib/equipment-groups'
 
-type View = 'all' | 'category' | 'location' | 'member'
+type View = EquipmentView
 const views: { id: View; label: string }[] = [
   { id: 'all', label: '一覧' }, { id: 'category', label: 'カテゴリ別' },
   { id: 'location', label: '保管場所別' }, { id: 'member', label: '所持者別' },
@@ -29,17 +29,7 @@ function HomeContent() {
   const [view, setView] = useState<View>('all')
   const selection = useBulkSelection()
   const filtered = useMemo(() => searchEquipments(catalog?.equipments || [], search), [catalog, search])
-  const groups = useMemo(() => {
-    if (view === 'all') return [['すべて', filtered]] as [string, Equipment[]][]
-    const map = new Map<string, Equipment[]>()
-    for (const item of filtered) {
-      const key = view === 'category' ? item.category.name : view === 'member'
-        ? item.holder.type === 'member' ? item.holder.name : '保管場所にある備品'
-        : item.holder.type === 'location' ? item.holder.name : '部員が所持中'
-      map.set(key, [...(map.get(key) || []), item])
-    }
-    return [...map.entries()].sort(([a], [b]) => a.localeCompare(b, 'ja'))
-  }, [filtered, view])
+  const groups = useMemo(() => groupEquipments(filtered, view, catalog?.categories ?? []), [filtered, view, catalog?.categories])
 
   if (loading && !catalog) return <p className="p-8 text-center" role="status">備品を読み込み中…</p>
   if (error && !catalog) return <main role="alert" className="p-8 text-center">{error}<button onClick={() => void reload()} className="ml-2 underline">再試行</button></main>
@@ -76,7 +66,7 @@ function HomeContent() {
             </label>}
             <Link href={`/equipments/${item.id}`} className="block rounded-2xl p-4 active:bg-teal-50">
             <div className="flex gap-4"><div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-100 text-sm text-slate-500">
-              {item.images.length ? <Image src={(item.images.find((photo) => photo.is_primary) ?? item.images[0]).url}
+              {item.images.length ? <Image src={`${(item.images.find((photo) => photo.is_primary) ?? item.images[0]).url}?width=160`}
                 alt={`${item.name}の代表写真`} fill unoptimized sizes="80px" className="object-cover" /> : '写真なし'}
             </div>
               <div className="min-w-0"><h3 className="font-bold">{item.name}</h3><p className="mt-1 text-sm text-slate-600">{item.category.name}</p>

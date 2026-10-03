@@ -16,6 +16,11 @@ export function MasterList({ kind }: { kind: Kind }) {
   const [description, setDescription] = useState('')
   const [sortOrder, setSortOrder] = useState(0)
   const [active, setActive] = useState(true)
+  function mergeSaved(row: Row) {
+    setItems((current) => [...current.filter((item) => item.id !== row.id), row].sort((a, b) =>
+      (kind === 'categories' && 'sort_order' in a && 'sort_order' in b ? a.sort_order - b.sort_order : 0)
+      || a.name.localeCompare(b.name, 'ja')))
+  }
   const load = useCallback(async () => {
     setLoading(true)
     try { const result = await adminRequest<{ items: Row[] }>(`/api/admin/${kind}`); setItems(result.items); setError('') }
@@ -30,24 +35,27 @@ export function MasterList({ kind }: { kind: Kind }) {
     setError('')
   }
   async function submit(event: FormEvent) {
-    event.preventDefault(); setBusy(true); setError('')
+    event.preventDefault()
+    if (loading || busy) return
+    setBusy(true); setError('')
     const payload = kind === 'categories' ? { name: name.trim(), sort_order: sortOrder }
       : kind === 'locations' ? { name: name.trim(), description: description.trim() || null, active }
       : { name: name.trim(), active }
     try {
-      await adminRequest(`/api/admin/${kind}${editing ? `/${editing.id}` : ''}`, { method: editing ? 'PATCH' : 'POST', body: JSON.stringify(payload) })
-      select(null); await load()
+      const result = await adminRequest<{ item: Row }>(`/api/admin/${kind}${editing ? `/${editing.id}` : ''}`, { method: editing ? 'PATCH' : 'POST', body: JSON.stringify(payload) })
+      mergeSaved(result.item); select(null)
     } catch (cause) { setError(errorMessage(cause)) } finally { setBusy(false) }
   }
   async function toggle(row: Row) {
     if (!('active' in row)) return
     if (!window.confirm(`${row.name}を${row.active ? '無効化' : '有効化'}しますか？`)) return
     setBusy(true); setError('')
-    try { await adminRequest(`/api/admin/${kind}/${row.id}`, { method: 'PATCH', body: JSON.stringify({ active: !row.active }) }); await load() }
+    try { const result = await adminRequest<{ item: Row }>(`/api/admin/${kind}/${row.id}`, { method: 'PATCH', body: JSON.stringify({ active: !row.active }) }); mergeSaved(result.item) }
     catch (cause) { setError(errorMessage(cause)) } finally { setBusy(false) }
   }
   const singular = kind === 'members' ? '部員' : kind === 'categories' ? 'カテゴリ' : '保管場所'
-  return <><AdminHeading title={titles[kind]} description="過去の履歴を保つため、部員と保管場所は無効化して管理します。" />
+  return <><AdminHeading title={titles[kind]} description="過去の履歴を保つため、部員と保管場所は無効化して管理します。"
+    action={<button className={secondaryButton} disabled={loading || busy} onClick={() => void load()}>{loading ? '更新中…' : '一覧を更新'}</button>} />
     <div className="grid gap-5 xl:grid-cols-[minmax(20rem,1fr)_minmax(17rem,24rem)]">
       <section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5"><h2 className="mb-4 text-lg font-bold">登録一覧</h2>
         {loading ? <p role="status">読み込み中…</p> : items.length === 0 ? <p className="text-sm text-slate-600">登録がありません。</p> : <div className="divide-y divide-slate-100">{items.map((row) => <div key={row.id} className="flex flex-wrap items-center justify-between gap-3 py-3"><div><p className="font-semibold">{row.name}</p><p className="text-xs text-slate-500">{'active' in row ? row.active ? '有効' : '無効' : `表示順 ${row.sort_order}`}{'description' in row && row.description ? ` · ${row.description}` : ''}</p></div><div className="flex gap-2"><button className={secondaryButton} onClick={() => select(row)}>編集</button>{'active' in row && <button className={secondaryButton} disabled={busy} onClick={() => void toggle(row)}>{row.active ? '無効化' : '有効化'}</button>}</div></div>)}</div>}
@@ -57,7 +65,7 @@ export function MasterList({ kind }: { kind: Kind }) {
           {kind === 'locations' && <div><label htmlFor="master-description" className="mb-1 block text-sm font-semibold">説明</label><textarea id="master-description" className={inputClass} rows={3} value={description} onChange={(event) => setDescription(event.target.value)} /></div>}
           {kind === 'categories' && <div><label htmlFor="master-sort" className="mb-1 block text-sm font-semibold">表示順</label><input id="master-sort" className={inputClass} type="number" step="1" value={sortOrder} onChange={(event) => setSortOrder(Number(event.target.value))} /></div>}
           {kind !== 'categories' && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={active} onChange={(event) => setActive(event.target.checked)} />有効</label>}
-          <div className="flex flex-wrap gap-2"><button className={primaryButton} disabled={busy}>{busy ? '保存中…' : '保存する'}</button>{editing && <button type="button" className={secondaryButton} onClick={() => select(null)}>編集をやめる</button>}</div>
+          <div className="flex flex-wrap gap-2"><button className={primaryButton} disabled={busy || loading}>{busy ? '保存中…' : '保存する'}</button>{editing && <button type="button" className={secondaryButton} onClick={() => select(null)}>編集をやめる</button>}</div>
         </form>
       </section>
     </div>

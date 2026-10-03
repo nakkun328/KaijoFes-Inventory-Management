@@ -2,9 +2,8 @@
 import { FormEvent, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AdminAlert, AdminHeading, inputClass, primaryButton, secondaryButton } from './shell'
-import { adminRequest, errorMessage, type AdminCategory, type AdminEquipment, type AdminLocation, type AdminMember } from './api'
+import { adminRequest, errorMessage, type AdminEquipment, type ReferenceLists } from './api'
 
-type ReferenceLists = { categories: AdminCategory[]; locations: AdminLocation[]; members: AdminMember[] }
 export function EquipmentForm({ equipment }: { equipment?: AdminEquipment }) {
   const router = useRouter()
   const [refs, setRefs] = useState<ReferenceLists | null>(null)
@@ -20,11 +19,7 @@ export function EquipmentForm({ equipment }: { equipment?: AdminEquipment }) {
   const [status, setStatus] = useState<AdminEquipment['status']>(equipment?.status ?? 'stored')
   useEffect(() => {
     let active = true
-    Promise.all([
-      adminRequest<{ items: AdminCategory[] }>('/api/admin/categories'),
-      adminRequest<{ items: AdminLocation[] }>('/api/admin/locations'),
-      adminRequest<{ items: AdminMember[] }>('/api/admin/members'),
-    ]).then(([categories, locations, members]) => { if (active) setRefs({ categories: categories.items, locations: locations.items, members: members.items }) })
+    adminRequest<ReferenceLists>('/api/admin/references').then((result) => { if (active) setRefs(result) })
       .catch((cause) => { if (active) setError(errorMessage(cause)) }).finally(() => { if (active) setLoading(false) })
     return () => { active = false }
   }, [])

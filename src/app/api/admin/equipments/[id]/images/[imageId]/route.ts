@@ -1,5 +1,6 @@
 import { fail, success, uuid, withAdmin } from '@/lib/admin-api-types'
 import { PHOTO_BUCKET } from '@/lib/photo-validation'
+import { photoResponse } from '@/lib/photo-response'
 
 type Context = { params: Promise<{ id: string; imageId: string }> }
 
@@ -11,20 +12,11 @@ export async function GET(request: Request, context: Context) {
       .select('storage_path').eq('id', imageId).eq('equipment_id', id).maybeSingle()
     if (error) throw error
     if (!image) return fail('写真が見つかりません。', 404)
-    const { data: photo, error: downloadError } = await client.storage.from(PHOTO_BUCKET).download(image.storage_path)
-    if (downloadError || !photo) {
-      console.error('Photo Storage download failed', downloadError)
-      return fail('写真を読み込めませんでした。', 502)
-    }
-    const bytes = await photo.arrayBuffer()
-    const extension = image.storage_path.split('.').pop()?.toLowerCase()
-    const mime = extension === 'png' ? 'image/png' : extension === 'webp' ? 'image/webp' : 'image/jpeg'
-    return new Response(bytes, { headers: {
-      'Content-Type': mime,
-      'Content-Length': String(bytes.byteLength),
-      'Cache-Control': 'private, no-store',
-      'X-Content-Type-Options': 'nosniff',
-    } })
+    return await photoResponse(request, image.storage_path, async () => {
+      const { data: photo, error: downloadError } = await client.storage.from(PHOTO_BUCKET).download(image.storage_path)
+      if (downloadError || !photo) throw downloadError ?? new Error('Photo is unavailable')
+      return photo
+    })
   })
 }
 

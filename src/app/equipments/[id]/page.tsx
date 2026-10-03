@@ -99,7 +99,7 @@ export default function EquipmentDetailPage() {
       {!item ? detailLoading ? <p className="mt-6" role="status">備品を読み込み中…</p> : null : <>
         <div className="mt-5 rounded-2xl bg-white p-5 shadow-sm">
           <div className="relative flex h-56 items-center justify-center overflow-hidden rounded-xl bg-slate-100 text-slate-500 sm:h-72">
-            {selectedImage ? <Image src={selectedImage.url} alt={`${item.name}の写真`} fill unoptimized
+            {selectedImage ? <Image src={`${selectedImage.url}?width=1280`} alt={`${item.name}の写真`} fill unoptimized
               sizes="(max-width: 640px) 100vw, 768px" className="object-contain" /> : '写真なし'}
           </div>
           {item.images.length > 1 && <div className="mt-3 flex gap-2 overflow-x-auto pb-2" aria-label="写真を選ぶ">
@@ -107,7 +107,7 @@ export default function EquipmentDetailPage() {
               onClick={() => setSelectedImageId(photo.id)} aria-label={`写真 ${index + 1} を表示`}
               aria-pressed={selectedImage?.id === photo.id}
               className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 bg-slate-100 sm:h-20 sm:w-20 ${selectedImage?.id === photo.id ? 'border-teal-700' : 'border-transparent'}`}>
-              <Image src={photo.url} alt="" fill unoptimized sizes="80px" className="object-cover" />
+              <Image src={`${photo.url}?width=160`} alt="" fill unoptimized sizes="80px" className="object-cover" />
             </button>)}
           </div>}
           <p className="mt-5 text-sm text-slate-600">{item.management_number} · {item.category.name}</p>
