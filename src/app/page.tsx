@@ -40,7 +40,7 @@ function HomeContent() {
     <Header member={session.member} onChange={() => { if (!selection.busy) { selection.clear(); session.clear() } }} search={search} onSearch={setSearch} />
     <main className="mx-auto max-w-4xl px-4 pb-12 pt-6">
       <div className="mb-5 flex items-end justify-between">
-        <div><h1 className="text-2xl font-bold">備品を探す</h1><p className="mt-1 text-sm text-slate-600">{filtered.length}件の備品</p></div>
+        <div><h1 className="text-2xl font-bold">備品を探す</h1><p className="mt-1 text-sm text-slate-600">{filtered.length}件の備品{view === 'all' && ' · 最終更新が新しい順'}</p></div>
         <div className="flex gap-2"><button onClick={() => selection.setSelecting(true)} disabled={selection.busy || selection.selecting || !catalog.equipments.length} className="min-h-11 rounded-lg border border-teal-700 px-3 py-2 text-sm font-semibold text-teal-800 disabled:opacity-40">まとめて移動</button>
           <button onClick={() => void reload()} disabled={loading || selection.busy} className="min-h-11 rounded-lg px-3 py-2 text-sm text-teal-800 underline disabled:opacity-50">{loading ? '更新中…' : '更新'}</button></div>
       </div>
